@@ -1,0 +1,138 @@
+<html>
+<head>
+	<title>Data visualization test</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+
+	<link rel="stylesheet" type="text/css" href="multirange.css">
+	<script src="multirange.js"></script>
+</head>
+<body onload="generate();">
+	<script src="treemap.js"></script>
+
+	<p class="center">TreeMap Data Visualization by Jackson Cannon for UW SandCat</p>
+
+	<div id="controls">
+
+		<fieldset class="outercontrols">
+			<legend>Data</legend>
+
+			<div>
+				<label>Number of Schools</label>
+				<input id="num_school" type="range" min="1" max="100" step="1" value="10">
+			</div>
+
+			<div>
+				<label>School size (max)</label>
+				<input id="num_class" type="range" min="1" max="100" step="1" value="45">
+			</div>
+
+			<div>
+				<label>Class size (max)</label>
+				<input id="num_student" type="range" min="1" max="100" step="1" value="35">
+			</div>
+
+			<div>
+				<label>School size variance</label>
+				<input id="var_school" type="range" min="0" max="100" step="1" value="90">
+			</div>
+
+			<div>
+				<label>Class size variance</label>
+				<input id="var_class" type="range" min="0" max="100" step="1" value="50">
+			</div>
+
+			<div>
+				<label>School/SAT correlation</label>
+				<input id="school_sat" type="range" min="0" max="100" step="1" value="75">
+			</div>
+
+			<div>
+				<label>GPA/SAT correlation</label>
+				<input id="gpa_sat" type="range" min="0" max="100" step="1" value="20">
+			</div>
+
+			<div>
+				<button onclick="generate();">Generate</button>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<label>Per-student info</label>
+				<input type="checkbox" id="stinfo_enabled">
+			</div>
+
+			<div>
+				<span id="outputinfo"></span>
+			</div>
+		</fieldset>
+
+
+		<fieldset class="outercontrols">
+			<legend>Visualization</legend>
+			<div class="visualization">
+				<span>GPA </span><input id="gpa_sat_slider" oninput="gpa_sat_slider();" type="range" min="0" max="100" step="1" value="0" style="width:180px;float:none;"><span> SAT</span>
+			</div>
+		</fieldset>
+
+		<fieldset class="outercontrols">
+		<legend>Filter</legend>
+			<div class="visualization">
+				<span>Date of Birth </span><input id="dob_slider" oninput="dob_slider();" type="range" multiple min="0" max="364" step="1" value="0,364" style="width:160px;float:none;">
+			</div>
+		</fieldset>
+
+		<fieldset class="outercontrols">
+			<legend>Optimization</legend>
+			<div>
+				<label>Enabled</label>
+				<input type="checkbox" id="opt_enabled" checked="checked">
+			</div>
+
+			<div>
+				<label>Stop Delay</label>
+				<input id="opt_delay" type="range" min="10" max="1000" step="10" value="150">
+			</div>
+		</fieldset>
+
+		<fieldset class="outercontrols">
+			<legend>Timers</legend>
+			<div>
+				<label>School/Class Layout:</label>
+				<span id="outertimer"></span>
+			</div>
+
+			<div>
+				<label>Students Layout:</label>
+				<span id="innertimer"></span>
+			</div>
+		</fieldset>
+
+		<fieldset class="outercontrols">
+			<legend>About</legend>
+			<div class="aboutdiv">
+				This page displays an interactive treemap, using the example dataset of a 3-layer tree containing schools, classes, and students.
+				Different schools are told apart by their color (hue). Classes within a school are different shades of that color.
+				Each student has a GPA, SAT score, and birthdate.
+				The size of a student's box is proportional to their GPA/SAT - drag the Visualization slider to interpolate these.
+				You may also drag the Filter slider to filter by birthdate.
+			</div>
+
+			<div class="aboutdiv">
+				<br>
+				Data Parameters: School size is number of classes per school. Class size is number of students per class. School/class size variance determines how much the size can vary - increasing variance decreases the overall average. School/SAT correlation determines how close the SAT scores of students from the same school are. GPA/SAT correlation determines how similar the SAT and GPA of individual students are. Per-Student info will show text info about a student, which is only visible on small data sets.
+			</div>
+
+			<div class="aboutdiv">
+				<br>
+				Optimization: Both the GPA/SAT and birthdate sliders will redraw the data only down to class-level while adjustments are being made.
+			</div>
+		</fieldset>
+
+		
+	</div>
+	<div id="output_outer">
+		<div id="output" class="part">
+			<div class="part-inner">
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>
