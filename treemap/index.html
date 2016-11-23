@@ -6,8 +6,15 @@
 	<link rel="stylesheet" type="text/css" href="multirange.css">
 	<script src="multirange.js"></script>
 </head>
-<body onload="generate();">
+<body onload="setTimeout(generate, 0);">
+	<script src="animation_polyfill.js"></script>
+	<script src="generic.js"></script>
 	<script src="treemap.js"></script>
+	<script src="generator.js"></script>
+	<script src="traversal.js"></script>
+	<script src="interface.js"></script>
+	<script src="layout.js"></script>
+	<script src="controller.js"></script>
 
 	<p class="center">TreeMap Data Visualization by Jackson Cannon for UW SandCat</p>
 
@@ -17,18 +24,28 @@
 			<legend>Data</legend>
 
 			<div>
-				<label>Number of Schools</label>
-				<input id="num_school" type="range" min="1" max="100" step="1" value="10">
+				<label>Number of Cities</label>
+				<input id="num_city" type="range" min="1" max="10" step="1" value="5">
 			</div>
 
 			<div>
-				<label>School size (max)</label>
-				<input id="num_class" type="range" min="1" max="100" step="1" value="45">
+				<label>Schools per City</label>
+				<input id="num_school" type="range" min="1" max="10" step="1" value="5">
 			</div>
 
 			<div>
-				<label>Class size (max)</label>
-				<input id="num_student" type="range" min="1" max="100" step="1" value="35">
+				<label>Classes per School</label>
+				<input id="num_class" type="range" min="1" max="50" step="1" value="25">
+			</div>
+
+			<div>
+				<label>Students per Class</label>
+				<input id="num_student" type="range" min="1" max="50" step="1" value="35">
+			</div>
+
+			<div>
+				<label>City size variance</label>
+				<input id="var_city" type="range" min="0" max="100" step="1" value="50">
 			</div>
 
 			<div>
@@ -52,10 +69,7 @@
 			</div>
 
 			<div>
-				<button onclick="generate();">Generate</button>
-				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-				<label>Per-student info</label>
-				<input type="checkbox" id="stinfo_enabled">
+				<button id="generate_button" onclick="generate();">Generate</button>
 			</div>
 
 			<div>
@@ -82,7 +96,7 @@
 			<legend>Optimization</legend>
 			<div>
 				<label>Enabled</label>
-				<input type="checkbox" id="opt_enabled" checked="checked">
+				<input type="checkbox" id="opt_enabled" checked="checked" onclick="optimization_checkbox();">
 			</div>
 
 			<div>
@@ -91,48 +105,34 @@
 			</div>
 		</fieldset>
 
-		<fieldset class="outercontrols">
+		<fieldset class="outercontrols" id="timers">
 			<legend>Timers</legend>
-			<div>
-				<label>School/Class Layout:</label>
-				<span id="outertimer"></span>
-			</div>
 
-			<div>
-				<label>Students Layout:</label>
-				<span id="innertimer"></span>
-			</div>
 		</fieldset>
 
 		<fieldset class="outercontrols">
-			<legend>About</legend>
-			<div class="aboutdiv">
-				This page displays an interactive treemap, using the example dataset of a 3-layer tree containing schools, classes, and students.
-				Different schools are told apart by their color (hue). Classes within a school are different shades of that color.
-				Each student has a GPA, SAT score, and birthdate.
-				The size of a student's box is proportional to their GPA/SAT - drag the Visualization slider to interpolate these.
-				You may also drag the Filter slider to filter by birthdate.
+			<legend>Controller</legend>
+
+			<!--<div>
+				<label>Test File</label>
+				<input id="controller_file" type="text" value="test.json">
+			</div>-->
+
+			<div>
+				<button onclick="controller_run();">Run</button>
 			</div>
 
-			<div class="aboutdiv">
-				<br>
-				Data Parameters: School size is number of classes per school. Class size is number of students per class. School/class size variance determines how much the size can vary - increasing variance decreases the overall average. School/SAT correlation determines how close the SAT scores of students from the same school are. GPA/SAT correlation determines how similar the SAT and GPA of individual students are. Per-Student info will show text info about a student, which is only visible on small data sets.
+			<div id="controller_output">
+				
 			</div>
-
-			<div class="aboutdiv">
-				<br>
-				Optimization: Both the GPA/SAT and birthdate sliders will redraw the data only down to class-level while adjustments are being made.
+			<div>
 			</div>
 		</fieldset>
-
 		
 	</div>
 	<div id="output_outer">
-		<div id="output" class="part">
-			<div class="part-inner">
-			</div>
-		</div>
+		<svg xmlns="http://www.w3.org/2000/svg" id="output" class="background">
+		</svg>
 	</div>
-
 </body>
 </html>

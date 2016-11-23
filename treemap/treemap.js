@@ -10,383 +10,264 @@ var DOB_MAX = 364;
 //auto-increment when filter changed
 var FILTER_COUNTER = 1;
 
+var LAYOUT_COUNTER = 1;
+
+var TOTAL_CITIES = 0;
 var TOTAL_SCHOOLS = 0;
 var TOTAL_CLASSES = 0;
 var TOTAL_STUDENTS = 0;
 
-function gpa_sat_slider() {
-	sc_gpa_sc_sat_BLEND = document.getElementById("gpa_sat_slider").value/100;
-	layout_all();
+var MIN_LAYERS = 1;
+var MAX_LAYERS = 4;
+
+var MIN_LAYERS_LOCKED = false;
+
+var OPTIMIZE_START_TIME;
+
+var OPTIMIZE_CURRENT_LAYER;
+
+var OPTIMIZE_FRAME_TIME = 40;
+
+var OPTIMIZE_BASETIME = 0;
+
+var OPTIMIZE_SLOW_FRAMES = 0;
+var OPTIMIZE_FAST_FRAMES = 0;
+
+var TRIGGER_LAYOUT = false;
+
+function trigger_layout() {
+	TRIGGER_LAYOUT = true;
 }
 
-function dob_slider() {
-	DOB_MIN = document.getElementById("dob_slider").valueLow;
-	DOB_MAX = document.getElementById("dob_slider").valueHigh;
+function run_layout() {
 
-	FILTER_COUNTER++; //clears cached summation data
-
-	layout_all();
-}
-
-function generate() {
-	var num_school = document.getElementById("num_school").value;
-	var num_class = document.getElementById("num_class").value;
-	var num_student = document.getElementById("num_student").value;
-
-	var var_school = document.getElementById("var_school").value/100.0;
-	var var_class = document.getElementById("var_class").value/100.0;
-
-	var school_sat = document.getElementById("school_sat").value/100.0;
-	var gpa_sat = document.getElementById("gpa_sat").value/100.0;
-
-	SHOW_VALUES = document.getElementById("stinfo_enabled").checked;
-
-	data = { "children":[] }
-
-	TOTAL_SCHOOLS = 0;
-	TOTAL_CLASSES = 0;
-	TOTAL_STUDENTS = 0;
-
-	var hue = 0;
-	var hue_step = 1.0/num_school;
-
-	for (var i = 0; i<num_school; i++) {
-		data.children.push(generate_school(Math.max(1,Math.floor(num_class*(1.0-(Math.random()*var_school)))),num_student,var_class,Math.random(),school_sat,gpa_sat,hue));
-		TOTAL_SCHOOLS++;
-		hue+=hue_step;
-	}
-
-	sum_child_arrays(data);
-
-	document.getElementById("outputinfo").innerHTML = TOTAL_SCHOOLS +" Schools/"+ TOTAL_CLASSES +" Classes/"+ TOTAL_STUDENTS +" Students";
-
-	layout_all();
+	LAYOUT_COUNTER++;
 	
-}
+	var delay = parseInt(document.getElementById("opt_delay").value,10);
 
-function generate_school(num_class,num_student,var_class,sat_avg,school_sat,gpa_sat,hue) {
-	var root = { "children":[], "hue":hue }
-
-	for (var i = 0; i<num_class; i++) {
-		var sat = lerp(0.6,1,Math.random());
-		var val = lerp(0.6,1,Math.random());
-		root.children.push(generate_class(Math.max(1,Math.floor(num_student*(1.0-(Math.random()*var_class)))),sat_avg,school_sat,gpa_sat,hue,sat,val));
-		TOTAL_CLASSES++;
-	}
-
-	sum_child_arrays(root);
-
-	return root;
-}
-
-function generate_class(num_student, sat_avg, school_sat, gpa_sat, hue, sat, val) {
-	var root = { "children":[], "hue":hue, "sat":sat, "val":val }
-
-	for (var i = 0; i<num_student; i++) {
-		var sat_rnd = lerp(Math.random(), sat_avg, school_sat);
-		var gpa_rnd = lerp(Math.random(), sat_rnd, gpa_sat);
-		root.children.push({ "sc_gpa": (gpa_rnd*99)+1, "sc_sat": (sat_rnd*99)+1, "DOB": Math.floor(Math.random()*365), "volume":1, "hue":hue, "sat":sat, "val":val });
-		TOTAL_STUDENTS++;
-	}
-
-	root.sc_gpa_totals = [];
-	root.sc_sat_totals = [];
-
-	for (var i = 0; i<num_student; i++) {
-		var dob = root.children[i].DOB;
-		root.sc_gpa_totals[dob] = (root.sc_gpa_totals[dob] || 0) + root.children[i].sc_gpa;
-		root.sc_sat_totals[dob] = (root.sc_sat_totals[dob] || 0) + root.children[i].sc_sat;
-	}
-
-	return root;
-}
-
-function sum_child_arrays(root) {
-	root.sc_gpa_totals = [];
-	root.sc_sat_totals = [];
-
-	for (var i = 0; i<root.children.length; i++) {
-		var child = root.children[i];
-		for (var j = 0; j<child.sc_gpa_totals.length; j++) {
-			root.sc_gpa_totals[j] = (root.sc_gpa_totals[j] || 0) + (child.sc_gpa_totals[j] || 0);
-			root.sc_sat_totals[j] = (root.sc_sat_totals[j] || 0) + (child.sc_sat_totals[j] || 0);
+	do_timer_render(function(){
+		for (var i=0; i<MIN_LAYERS; i++) {
+			traverse_layer_view(data, i, compute_layout);
 		}
-	}
-
+		draw_layer(data, MIN_LAYERS-1);
+	}, "timer_o", layout_callback, {"next":MIN_LAYERS, "delay":delay, "counter":LAYOUT_COUNTER});
 }
 
-var latest_layout_timer;
-function layout_all() {
-	var output = document.getElementById("output");
+function layout_callback(outputid, t, t_layout, args) {
+	optimizer_callback(outputid, t, t_layout);
+	if (args.next < MAX_LAYERS) {
+		setTimeout(function() {
+			if (args.counter != LAYOUT_COUNTER) {
+				return;
+			}
+			do_timer_render(function(){
+				traverse_layer_view(data, args.next, compute_layout);
+				draw_layer(data, args.next);
+			}, "timer_l"+args.next, layout_callback, {"next":args.next+1, "delay":args.delay, "counter":args.counter}) 
+		}, args.delay);
+	}
+}
 
-	data.width = parseInt(window.getComputedStyle(output).width,10);
-	data.height = parseInt(window.getComputedStyle(output).height,10);
-	data.dom = output;
-
-	// layout until stop for generic tree (any length)
-	/*
-		var i = 0;
-		while (layout_data(data,i)) {
-			i++;
+function optimizer_callback(outputid, t, t_layout) {
+	if (MIN_LAYERS_LOCKED) {
+		return;
+	}
+	if (outputid=="timer_o") {
+		if (t>OPTIMIZE_FRAME_TIME) {
+			OPTIMIZE_SLOW_FRAMES++;
+			if (t>(OPTIMIZE_FRAME_TIME*3)) {
+				OPTIMIZE_SLOW_FRAMES++;
+			}
+		} else {
+			OPTIMIZE_SLOW_FRAMES = 0; //Math.max(OPTIMIZE_SLOW_FRAMES-1, 0);
 		}
-	*/
+		if (OPTIMIZE_SLOW_FRAMES > 2) {
+			if (MIN_LAYERS > 1) {
+				MIN_LAYERS = MIN_LAYERS-1;
+				update_timer_area();
+			}
+			OPTIMIZE_SLOW_FRAMES = 0;
+		}
+		OPTIMIZE_BASETIME=t_layout;
+	} else {
+		if (OPTIMIZE_BASETIME+t < OPTIMIZE_FRAME_TIME) {
+			OPTIMIZE_FAST_FRAMES++;
+		} else {
+			OPTIMIZE_FAST_FRAMES = 0; //Math.max(OPTIMIZE_FAST_FRAMES-1, 0);
+		}
+		if (OPTIMIZE_FAST_FRAMES>0) {
+			if (MIN_LAYERS < MAX_LAYERS) {
+				MIN_LAYERS = MIN_LAYERS+1;
+				update_timer_area((OPTIMIZE_BASETIME+t)+"ms");
+			}
+			OPTIMIZE_FAST_FRAMES = 0;
+		}
+		OPTIMIZE_BASETIME += t_layout;
+	}
+}
 
-	do_timer(function() {
-		compute_volume(data);
-		layout_data(data,0);
-		layout_data(data,1);
-	}, "outertimer");
-	if (document.getElementById("opt_enabled").checked == false) {
-		do_timer( function() {
-			layout_data(data,2);
-		}, "innertimer");
+function do_timer_render(func, output, callback, callback_args) {
+	var t = curTime();
+	func();
+	var t_layout = curTime()-t;
+
+	delayFrame(function() {
+		t = curTime()-t;
+		
+		if (callback != undefined) {
+			callback(output, t, t_layout, callback_args);
+		}
+		var out = document.getElementById(output);
+		if (out!=null) {
+			out.innerHTML = t+"ms";
+		}
+	});
+}
+
+function draw_layer(root, layer, nocull) {
+	//shouldn't be reached
+	if (!("children" in root)) {
+		console.log("warning: drawing on leaf");
 		return;
 	}
 
-	var local_timeout = setTimeout(layout_all_later,parseInt(document.getElementById("opt_delay").value,10));
-	latest_layout_timer = local_timeout;
-
-	function layout_all_later() {
-		if(local_timeout==latest_layout_timer) {
-			do_timer(function() {
-				layout_data(data,2);
-			}, "innertimer");
-		}
+	if ("rect" in root) {
+		root.rect.setAttribute('display', 'none');
 	}
-}
 
-function do_timer(func, output) {
-	var t = new Date().getTime();
-	func();
-	document.getElementById(output).innerHTML = new Date().getTime()-t+"ms";
-}
+	if (nocull || (data_in_view(root) && (root.volume || 0.0) > 0.0)) {
+		root.svg.setAttribute('display', 'inline');
+	} else {
+		root.svg.setAttribute('display', 'none');
+		return;
+	}
 
-
-function layout_data(root, layer) {
-	var output = false; //did we do anything this pass?
-	if (layer > 0) {
-		layer -= 1;
-		if ("children" in root) {
-			for(var i=0; i<root.children.length; i++) {
-				output |= layout_data(root.children[i], layer);
+	if (layer == 0) {
+		for(var i=0; i<root.children.length; i++) {
+			var child = root.children[i];
+			if (child.volume>0) {
+				var txp = (child.xt*VIEW_SCALE)-VIEW_X;
+				var typ = (child.yt*VIEW_SCALE)-VIEW_Y;
+				child.rect.setAttributeNS(null, 'x', Math.trunc(txp));
+				child.rect.setAttributeNS(null, 'y', Math.trunc(typ));
+				child.rect.setAttributeNS(null, 'width', Math.max(Math.trunc(child.width*VIEW_SCALE + (txp % 1.0)) - 1,0));
+				child.rect.setAttributeNS(null, 'height', Math.max(Math.trunc(child.height*VIEW_SCALE + (typ % 1.0)) - 1,0));
+				child.rect.setAttribute('display', 'inline');
+			} else {
+				child.rect.setAttribute('display', 'none');
+			}
+			if ("svg" in child) {
+				child.svg.setAttribute('display', 'none');
 			}
 		}
 	} else {
-		output = true;
-		if ("children" in root) {
-			while (root.dom.hasChildNodes()) {
-			  	root.dom.removeChild(root.dom.lastChild);
-			}
-			//compute_volume(root);
-			if ((root.volume || 0.0) == 0.0) {
-				return false;
-			}
-			for(var i=0; i<root.children.length; i++) {
-				compute_volume(root.children[i]);
-			}
-
-			//finds a good box layout, outputting to x/y/width/height properties
-			find_layout(root);
-			
-			for(var i=0; i<root.children.length; i++) {
-				var child = root.children[i];
-				if (child.volume>0) {
-
-					var proportion = child.volume/root.volume;
-
-					child.dom = document.createElement("DIV");
-					child.dom.className = "part";
-					child.dom.style.left = (child.x) + "px";
-					child.dom.style.top = (child.y) + "px";
-					child.dom.style.right = (root.width - (child.x + child.width)) + "px";
-					child.dom.style.bottom = (root.height - (child.y + child.height)) + "px";
-					root.dom.appendChild(child.dom);
-
-					var childinner = document.createElement("DIV");
-					childinner.className = "part-inner";
-					childinner.style.backgroundColor = HSVtoColor(child.hue || 0,child.sat || 1,child.val || 1);
-					child.dom.appendChild(childinner);
-
-					if (SHOW_VALUES) {
-						var value = "";
-						if ("sc_gpa" in child) {
-							value += "GPA: " +(child.sc_gpa*4/100).toFixed(1)+"<br>";
-						}
-						if ("sc_sat" in child) {
-							value += "SAT: " +(child.sc_gpa*2400/100).toFixed(0)+"<br>";
-						}
-						if ("DOB" in child) {
-							value += "DOB: " +(child.DOB+1).toFixed(0)+"<br>";
-						}
-						childinner.innerHTML = value;
-					}
-				}
-			}
+		for(var i=0; i<root.children.length; i++) {
+			draw_layer(root.children[i], layer-1);
 		}
 	}
-	return output;
+
 }
 
-function compute_volume(root) {
-	if (root.filtercounter != FILTER_COUNTER) {
-		root.filtered_gpa = compute_volume_key(root, "sc_gpa");
-		root.filtered_sat = compute_volume_key(root, "sc_sat");
-		root.filtercounter = FILTER_COUNTER;
-
-		delete root.asprsqrt;
-		root.layoutvolume = lerp(root.filtered_gpa, root.filtered_sat, 0.5);
-	}
-	root.volume = lerp(root.filtered_gpa, root.filtered_sat, sc_gpa_sc_sat_BLEND);
+function data_in_view(root) {
+	return (root.xt < VIEW_XMAX && root.yt < VIEW_YMAX && (root.xt + root.width) > VIEW_XMIN && (root.yt + root.height) > VIEW_YMIN);
 }
 
-function compute_volume_key(root, key) {
-	var volume = 0;
-	if (key in root) {
-		if (root.DOB >= DOB_MIN && root.DOB <= DOB_MAX) {
-			volume = root[key];
-		}
-	} else if (key+"_totals" in root) {
-		var totals = root[key+"_totals"];
-		for(var i=DOB_MIN; i<=DOB_MAX; i++) {
-			volume += totals[i] || 0;
-		}
+var VIEW_X = 0;
+var VIEW_Y = 0;
+var VIEW_SCALE = 1;
+//for quicker culling optimization
+var VIEW_XMIN = -100000;
+var VIEW_YMIN = -100000;
+var VIEW_XMAX = 100000;
+var VIEW_YMAX = 100000;
+
+window.addEventListener("load", function(){
+
+var output = document.getElementById("output");
+
+function update_view() {
+	VIEW_XMIN = VIEW_X / VIEW_SCALE;
+	VIEW_YMIN = VIEW_Y / VIEW_SCALE;
+	VIEW_XMAX = VIEW_XMIN + (parseInt(window.getComputedStyle(output).width, 10) / VIEW_SCALE);
+	VIEW_YMAX = VIEW_YMIN + (parseInt(window.getComputedStyle(output).height, 10) / VIEW_SCALE);
+}
+update_view();
+
+var is_mouse_down = false;
+var mouse_x_last = 0;
+var mouse_y_last = 0;
+output.addEventListener("mousedown", function(evt){
+    is_mouse_down = true;
+    mouse_x_last = evt.clientX;
+    mouse_y_last = evt.clientY;
+}, false);
+document.body.addEventListener("mousemove", function(evt){
+	//for some bizarre reason, moving the data causes a lot more lag
+	if (is_mouse_down) {
+	    VIEW_X -= evt.clientX - mouse_x_last;
+	    VIEW_Y -= evt.clientY - mouse_y_last;
+	    mouse_x_last = evt.clientX;
+    	mouse_y_last = evt.clientY;
+
+    	update_view();
+    	trigger_layout();
 	}
-	return volume;
+}, false);
+document.body.addEventListener("mouseup", function(){
+	is_mouse_down = false;
+}, false);
+output.addEventListener("wheel", function(e){
+
+	var rect = output.getBoundingClientRect();
+
+	var msx = e.clientX - rect.left;
+	var msy = e.clientY - rect.top;
+
+	var mouse_cx = (msx + VIEW_X)/VIEW_SCALE;
+	var mouse_cy = (msy + VIEW_Y)/VIEW_SCALE;
+	
+	if(e.deltaY < 0) {
+		VIEW_SCALE *= 1.2;
+	} else {
+		VIEW_SCALE /= 1.2;
+	}
+	VIEW_SCALE = Math.min(20, Math.max(VIEW_SCALE,0.5));
+
+	VIEW_X = (mouse_cx*VIEW_SCALE) - msx;
+	VIEW_Y = (mouse_cy*VIEW_SCALE) - msy;
+
+	update_view();
+	trigger_layout();
+
+	if(!e){ e = window.event; } /* IE7, IE8, Chrome, Safari */
+    if(e.preventDefault) { e.preventDefault(); } /* Chrome, Safari, Firefox */
+    e.returnValue = false; /* IE7, IE8 */
+}, false);
+
+}, false);
+
+
+frame_functions = [];
+frame_functions_next = [];
+
+function delayFrame(func) {
+	frame_functions_next.push(func);
 }
 
-//todo: make it also try horizantal layouts (columns instead of rows)
-function find_layout(root) {
-	var layout = [];
+function frame() {
+    requestAnimationFrame(frame);
 
-	//sqrt of aspect ratio - used for choosing row size
-	//calculation is saved to prevent rows from rearranging
-	//note: not the best one-time calculation, since this should calculate based on width/height when volume is halfway between sc_gpa/sc_sat
-	if (!("asprsqrt" in root)) {
-		root.asprsqrt = Math.sqrt(root.width/root.height);
-	}
-	var this_pref_row = 0;
+    frame_functions = frame_functions_next;
+    frame_functions_next = [];
 
-	//sc = showing children
-	var sc = [];
-
-	for(var i=0; i<root.children.length; i++) {
-		if (root.children[i].volume > 0) {
-			sc.push(i);
-		}
-	}
-
-	for(var i=0; i<sc.length; i++) {
-		layout.push({});
-		var temp = Math.max(Math.floor(root.asprsqrt*Math.sqrt(root.layoutvolume/root.children[sc[i]].layoutvolume)),1);
-		//preferred number of items to share a row with
-		layout[i].pref_row = temp;
-		this_pref_row = Math.max(temp,this_pref_row);
-	}
-
-	//this shouldn't be reached, but sometimes it is...
-	if (this_pref_row==0) {
-		//console.log("layout no children error");
-		//console.log(root);
-		//alert("layout no children error");
-		return;
-	}
-
-	var rows = [];
-	var items_assigned = 0;
-	while (this_pref_row > 0) {
-		next_row = [];
-		for(var i=0; i<layout.length; i++) {
-			if (layout[i].pref_row >= this_pref_row && !("assigned" in layout[i])) {
-				if (next_row.length < this_pref_row) {
-					next_row.push(i);
-				} else {
-					var lowest = layout[i].pref_row;
-					var lowest_idx = -1;
-					for (var j=0; j<next_row.length; j++) {
-						if(layout[next_row[j]].pref_row < lowest) {
-							lowest = layout[next_row[j]].pref_row;
-							lowest_idx = j;
-						}
-					}
-					//replace larger items with smaller for more populated rows
-					if (lowest_idx != -1) {
-						next_row[lowest_idx] = i;
-					}
-				}
-			}
-		}
-		if (next_row.length < this_pref_row) {
-			this_pref_row--;
-		} else {
-			rows.push(next_row);
-			for (var j=0; j<next_row.length; j++) {
-				layout[next_row[j]].assigned = true;
-			}
-		}
-	}
-
-	//shuffleArray(rows);
-
-	var curr_y = 0;
-	for (var i = 0; i<rows.length; i++) {
-		var row = rows[i];
-		var this_volume = 0;
-		for (var j = 0; j<row.length; j++) {
-			this_volume += root.children[sc[row[j]]].volume;
-		}
-		var proportion = this_volume/root.volume;
-		var height = proportion*root.height;
-
-		var curr_x = 0;
-		for (var j = 0; j<row.length; j++) {
-			if (this_volume == 0) {
-				proportion = 1.0/row.length;
-			} else {
-				proportion = root.children[sc[row[j]]].volume/this_volume;
-			}
-			var width = proportion*root.width;
-			root.children[sc[row[j]]].x = curr_x;
-			root.children[sc[row[j]]].y = curr_y;
-			root.children[sc[row[j]]].width = width;
-			root.children[sc[row[j]]].height = height;
-			curr_x += width;
-		}
-
-		curr_y += height;
-	}
-}
-
-function lerp(v0, v1, t) {
-    return v0*(1-t)+v1*t
-}
-
-function shuffleArray(array) {
-    for (var i = array.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
+    while(frame_functions.length > 0) {
+    	(frame_functions.pop())();
     }
-    return array;
-}
 
-function HSVtoColor(h, s, v) {
-    var r, g, b, i, f, p, q, t;
-    if (arguments.length === 1) {
-        s = h.s, v = h.v, h = h.h;
+    if (TRIGGER_LAYOUT) {
+    	run_layout();
+    	TRIGGER_LAYOUT = false;
     }
-    i = Math.floor(h * 6);
-    f = h * 6 - i;
-    p = v * (1 - s);
-    q = v * (1 - f * s);
-    t = v * (1 - (1 - f) * s);
-    switch (i % 6) {
-        case 0: r = v, g = t, b = p; break;
-        case 1: r = q, g = v, b = p; break;
-        case 2: r = p, g = v, b = t; break;
-        case 3: r = p, g = q, b = v; break;
-        case 4: r = t, g = p, b = v; break;
-        case 5: r = v, g = p, b = q; break;
-    }
-    return "rgb("+Math.round(r * 255)+","+Math.round(g * 255)+","+Math.round(b * 255)+")";
 }
+frame();
+
