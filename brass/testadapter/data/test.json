@@ -1,0 +1,106 @@
+{"commands": [
+    {
+      "time": 0,
+      "type": "slider",
+      "id": "num_city",
+      "value": 1
+    },
+    {
+      "time": 0,
+      "type": "slider",
+      "id": "num_school",
+      "value": 7
+    },
+    {
+      "time": 0,
+      "type": "slider",
+      "id": "num_class",
+      "value": 30
+    },
+    {
+      "time": 0,
+      "type": "slider",
+      "id": "num_student",
+      "value": 40
+    },
+    {
+      "time": 0,
+      "type": "slider",
+      "id": "var_city",
+      "value": 0
+    },
+    {
+      "time": 0,
+      "type": "slider",
+      "id": "var_school",
+      "value": 50
+    },
+    {
+      "time": 0,
+      "type": "slider",
+      "id": "var_class",
+      "value": 50
+    },
+    {
+      "time": 0,
+      "type": "value",
+      "id": "opt_enabled",
+      "key": "checked",
+      "value": true
+    },
+    {
+      "time": 0.1,
+      "type": "click",
+      "id": "generate_button"
+    },
+    {
+      "time": 2,
+      "type": "slider",
+      "id": "gpa_sat_slider",
+      "value": 20,
+      "interpolate": false
+    },
+    {
+      "time": 3,
+      "type": "slider",
+      "id": "gpa_sat_slider",
+      "value": 0,
+      "interpolate": true
+    },
+    {
+      "time": 5,
+      "type": "slider",
+      "id": "gpa_sat_slider",
+      "value": 80,
+      "interpolate": false
+    },
+    {
+      "time": 7,
+      "type": "slider",
+      "id": "gpa_sat_slider",
+      "value": 20,
+      "interpolate": false
+    },
+    {
+      "time": 9,
+      "type": "slider",
+      "id": "gpa_sat_slider",
+      "value": 20,
+      "interpolate": true
+    },
+    {
+      "time": 13,
+      "type": "slider",
+      "id": "gpa_sat_slider",
+      "value": 100,
+      "interpolate": true
+    },
+    {
+      "time": 14,
+      "type": "slider",
+      "id": "gpa_sat_slider",
+      "value": 0,
+      "interpolate": true
+    }
+  ]
+}
