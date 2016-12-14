@@ -1,0 +1,110 @@
+<html>
+<head>
+	<title>Data visualization test</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+</head>
+<body>
+	<script src="demo.js"></script>
+
+	<p class="center">Data Visualization Test by Jackson Cannon for UW SandCat</p>
+
+	<div id="controls">
+
+		<fieldset class="outercontrols">
+			<div>
+				<select id="dataset" onchange="change_dataset();">
+				  <option selected="selected" value="1">Dataset 1</option>
+				  <option value="2">Dataset 2</option>
+				</select>
+			</div>
+			<fieldset class="innercontrols">
+				<legend>Mixer</legend>
+				<div>
+					<label>Constant</label>
+					<input id="constant" type="range" min="0" max="100" step="1" value="50">
+				</div>
+				<div>
+					<label>Noise</label>
+					<input id="noise" type="range" min="0" max="100" step="1" value="0">
+				</div>
+				<div>
+					<label>Linear</label>
+					<input id="linear" type="range" min="0" max="100" step="1" value="100">
+				</div>
+				<div>
+					<label>Sine</label>
+					<input id="sine" type="range" min="0" max="100" step="1" value="0">
+				</div>
+				<div>
+					<label>Exponential</label>				
+					<input id="exponent" type="range" min="0" max="100" step="1" value="0">
+				</div>
+			</fieldset>
+
+			<fieldset class="innercontrols">
+				<legend>Parameters</legend>
+				<div>
+					<label>Sine</label>
+					<input id="sineparam" type="range" min="0" max="100" step="1" value="10">
+				</div>
+				<div>
+					<label>Exponential</label>
+					<input id="exponentparam" type="range" min="1" max="100" step="1" value="25">
+				</div>
+				<div>
+					<label>Reverse Linear</label>
+					<input type="checkbox" id="linearparam">
+				</div>
+			</fieldset>
+		</fieldset>
+
+		<fieldset class="outercontrols">
+			<legend>Data points</legend>
+			<input type="text" id="count" value="1000">
+			<button onclick="generate();">Generate</button>
+		</fieldset>
+
+
+		<fieldset class="outercontrols">
+			<legend>Visualizer</legend>
+			<div class="center" style="padding:4px 0px;background-color:#ddffcc;">
+				<span>1 </span><input id="slider" oninput="slider_change();" type="range" min="0" max="100" step="1" value="0" style="width:200px;float:none;"><span> 2</span>
+			</div>
+			<span>Layout Time:</span>
+			<span id="timer">0ms</span>
+		</fieldset>
+
+		<fieldset class="outercontrols">
+			<legend>Moving Resolution</legend>
+			<div>
+				<label>Enabled</label>
+				<input type="checkbox" id="lodataenabled" checked="checked">
+			</div>
+
+			<div>
+				<label>Averaging Factor</label>
+				<input onchange="update_lodata();" id="lodatafactor" type="range" min="2" max="100" step="1" value="10">
+			</div>
+
+			<div>
+				<label>Stop Delay</label>
+				<input id="lodatadelay" type="range" min="10" max="1000" step="10" value="100">
+			</div>
+		</fieldset>
+
+		
+
+		
+	</div>
+	<div id="output_outer">
+		<div id="output">
+
+		</div>
+		<div id="outputlo" style="display:none;">
+
+		</div>
+	</div>
+
+</body>
+</html>

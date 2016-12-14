@@ -1,6 +1,6 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    system("\"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe\" \"http://localhost/brass/circlepacking#autorun\"");
+    system("\"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe\" \"http://localhost/brass/visualization#autorun\"");
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

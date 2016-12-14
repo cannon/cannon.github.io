@@ -51,7 +51,7 @@
     {
       "time": 0.1,
       "type": "click",
-      "id": "generate_button"
+      "id": "circlepacking_button"
     },
     {
       "time": 2,
