@@ -34,10 +34,32 @@ function HSVtoColor(h, s, v) {
     return "#"+("00"+Math.round(r * 255).toString(16)).substr(-2)+("00"+Math.round(g * 255).toString(16)).substr(-2)+("00"+Math.round(b * 255).toString(16)).substr(-2);
 }
 
+var CURTIME_OFFSET = 0;
+var TIME_PAUSED = -1;
+
 function curTime() {
-    return new Date().getTime();
+    if (TIME_PAUSED > -1) {
+        return TIME_PAUSED;
+    }
+    return (new Date().getTime())-CURTIME_OFFSET;
 }
 
+function pauseTime() {
+    if (TIME_PAUSED > -1) {
+        console.log("TIME ALREADY PAUSED");
+    } else {
+        TIME_PAUSED = curTime();
+    }
+}
+
+function resumeTime() {
+    if (TIME_PAUSED > -1) {
+        CURTIME_OFFSET = (new Date().getTime())-TIME_PAUSED;
+        TIME_PAUSED = -1;
+    } else {
+        console.log("TIME IS NOT PAUSED");
+    }
+}
 
 function dist(x, y) {
     return Math.sqrt((x*x)+(y*y));
